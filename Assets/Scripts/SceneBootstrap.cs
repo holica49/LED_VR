@@ -13,23 +13,28 @@ public class SceneBootstrap : MonoBehaviour
 {
     void Awake()
     {
+        // ── Resolve shaders ─────────────────────────────────────
+        // Capture the default shader from a primitive — guaranteed to exist
+        // in whatever render pipeline the project uses, and never stripped.
+        Shader litShader = ResolveLitShader();
+        Shader unlitShader = ResolveUnlitShader();
+
         // ── 1. Floor ─────────────────────────────────────────────
         GameObject floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
         floor.name = "Floor";
         floor.transform.position = Vector3.zero;
         floor.transform.localScale = new Vector3(10f, 1f, 10f);  // 100x100 m
-        var floorMat = new Material(Shader.Find("Universal Render Pipeline/Lit")
-                       ?? Shader.Find("Standard"));
+        var floorMat = new Material(litShader);
         floorMat.color = new Color(0.25f, 0.25f, 0.25f);
         floor.GetComponent<Renderer>().material = floorMat;
 
         // ── 2. LED Box ───────────────────────────────────────────
         GameObject ledBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
         ledBox.name = "LEDBox";
-        var ledMat = new Material(Shader.Find("Universal Render Pipeline/Lit")
-                     ?? Shader.Find("Standard"));
+        var ledMat = new Material(litShader);
         ledMat.color = new Color(0.1f, 0.1f, 0.15f);             // dark panel
-        ledMat.SetFloat("_Smoothness", 0.3f);
+        if (ledMat.HasProperty("_Smoothness"))
+            ledMat.SetFloat("_Smoothness", 0.3f);
         ledBox.GetComponent<Renderer>().material = ledMat;
 
         // Front-face emissive highlight so you can tell which side is the screen
@@ -39,8 +44,7 @@ public class SceneBootstrap : MonoBehaviour
         ledFront.transform.localPosition = new Vector3(0f, 0f, -0.501f); // slightly in front
         ledFront.transform.localRotation = Quaternion.identity;
         ledFront.transform.localScale    = new Vector3(1f, 1f, 1f);
-        var frontMat = new Material(Shader.Find("Universal Render Pipeline/Unlit")
-                       ?? Shader.Find("Unlit/Color"));
+        var frontMat = new Material(unlitShader);
         frontMat.color = new Color(0.05f, 0.15f, 0.4f);          // dim blue "screen"
         ledFront.GetComponent<Renderer>().material = frontMat;
         // Remove collider from the quad — it's purely visual
@@ -49,16 +53,14 @@ public class SceneBootstrap : MonoBehaviour
         // ── 3. Ruler (1 m reference) ─────────────────────────────
         GameObject ruler = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         ruler.name = "Ruler_1m";
-        var rulerMat = new Material(Shader.Find("Universal Render Pipeline/Lit")
-                       ?? Shader.Find("Standard"));
+        var rulerMat = new Material(litShader);
         rulerMat.color = Color.yellow;
         ruler.GetComponent<Renderer>().material = rulerMat;
 
         // ── 4. Stage platform (visual only) ──────────────────────
         GameObject stage = GameObject.CreatePrimitive(PrimitiveType.Cube);
         stage.name = "StagePlatform";
-        var stageMat = new Material(Shader.Find("Universal Render Pipeline/Lit")
-                       ?? Shader.Find("Standard"));
+        var stageMat = new Material(litShader);
         stageMat.color = new Color(0.35f, 0.22f, 0.1f);          // brown wood
         stage.GetComponent<Renderer>().material = stageMat;
         // Will be repositioned by UpdateStagePlatform() after Apply
@@ -414,5 +416,58 @@ public class SceneBootstrap : MonoBehaviour
         tmp.alignment = TextAlignmentOptions.Center;
 
         return btn;
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    // Shader resolution — works with URP, Built-in RP, or any pipeline
+    // ══════════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// Returns a lit shader that is guaranteed to work in the current pipeline.
+    /// Captures the default shader Unity assigns to primitives as final fallback,
+    /// since that shader is always compiled and included in the build.
+    /// </summary>
+    static Shader ResolveLitShader()
+    {
+        // 1. Try URP
+        Shader s = Shader.Find("Universal Render Pipeline/Lit");
+        if (s != null) return s;
+
+        // 2. Try Built-in Standard
+        s = Shader.Find("Standard");
+        if (s != null) return s;
+
+        // 3. Try mobile-friendly shaders (less likely to be stripped)
+        s = Shader.Find("Mobile/Diffuse");
+        if (s != null) return s;
+
+        s = Shader.Find("Legacy Shaders/Diffuse");
+        if (s != null) return s;
+
+        // 4. Final fallback: grab whatever shader the engine uses for primitives
+        GameObject tmp = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        s = tmp.GetComponent<Renderer>().sharedMaterial.shader;
+        Destroy(tmp);
+
+        Debug.LogWarning("[SceneBootstrap] Using primitive default shader as fallback: " + s.name);
+        return s;
+    }
+
+    /// <summary>
+    /// Returns an unlit shader for the LED front face.
+    /// </summary>
+    static Shader ResolveUnlitShader()
+    {
+        Shader s = Shader.Find("Universal Render Pipeline/Unlit");
+        if (s != null) return s;
+
+        s = Shader.Find("Unlit/Color");
+        if (s != null) return s;
+
+        s = Shader.Find("UI/Default");
+        if (s != null) return s;
+
+        // Fallback to lit shader — still better than pink
+        return ResolveLitShader();
     }
 }
