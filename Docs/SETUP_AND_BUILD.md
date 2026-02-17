@@ -55,9 +55,13 @@ macOS / Linux는 필요 없음.
    - 초록색 "Code" 버튼 → "Download ZIP"
    - 압축 풀기
 
-2. 압축 푼 폴더에서 아래 파일들 복사:
+2. 압축 푼 폴더에서 Scripts 폴더만 복사:
    LED_VR/Assets/Scripts/ 폴더 통째로
    → My project/Assets/ 안에 붙여넣기
+
+⚠️ 주의: Assets/Scripts/ 폴더만 복사하세요!
+   Packages/ 폴더나 ProjectSettings/ 폴더를 덮어쓰면
+   기존 프로젝트의 URP 설정이 깨져서 핑크색 화면이 됩니다.
 
 3. Unity로 돌아오면 자동으로 스크립트를 인식함
 ```
@@ -273,7 +277,7 @@ Quest 2 헤드셋에서:
 |---|---|
 | Package Manager에 Android 없음 | Unity Hub → Installs → Add Modules → Android Build Support |
 | OpenXR 설정에 Meta Quest 없음 | "Unity OpenXR: Meta" 패키지가 설치 안 됨 → STEP 2-2 |
-| Play 누르면 핑크색 오브젝트 | URP Shader 문제 → Edit → Rendering → Render Pipeline 확인 |
+| Play 누르면 핑크색 오브젝트 | URP 패키지 누락일 가능성 높음 → Window → Package Manager에서 "Universal RP" 설치 확인. ZIP에서 Packages/manifest.json을 덮어썼다면 URP가 제거됨 → 프로젝트를 새로 만들거나 Package Manager에서 URP 재설치 |
 | TMP 글자가 안 보임 | Window → TextMeshPro → Import TMP Essential Resources |
 | Quest에서 검은 화면 | OpenXR + Meta Quest Feature 체크 확인 → STEP 3-3 |
 | 컨트롤러로 UI 못 누름 | XR Origin의 컨트롤러에 XR Ray Interactor 확인 |
