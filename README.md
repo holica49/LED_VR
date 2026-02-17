@@ -7,7 +7,7 @@ VR 공간에서 LED 패널 크기, 무대 높이, 관객 거리, 눈높이를 �
 
 ## Quick Start
 
-1. Unity 2022.3 LTS에서 이 폴더를 프로젝트로 열기
+1. Unity 6 LTS (6000.3.x)에서 이 폴더를 프로젝트로 열기
 2. 패키지 자동 import 대기
 3. 빈 Scene → 빈 GameObject에 `SceneBootstrap.cs` 부착 → Play
 4. Quest 2 빌드: `Docs/SETUP_AND_BUILD.md` 참조

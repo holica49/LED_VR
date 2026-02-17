@@ -1,144 +1,281 @@
-# Project Setup & Build Guide — LED Screen VR Demo (Quest 2)
+# LED Screen VR Demo — 처음부터 끝까지 (Unity 6 + Quest 2)
 
-## Prerequisites
+> Unity 6.3 LTS (6000.3.x) 기준, VR 개발 처음인 사람을 위한 가이드
 
-| Tool | Version |
-|---|---|
-| Unity | **2022.3 LTS** (any 2022.3.x) |
-| Android SDK | API 29+ (auto-installed via Unity Hub) |
-| JDK | 11 (bundled with Unity) |
-| Meta Quest 2 | Firmware ≥ v57, Developer Mode ON |
-| Oculus ADB Drivers | Latest (Windows) |
-| SideQuest / adb | For sideloading |
+---
 
-## 1. Open Project
+## STEP 0. PC에 필요한 것 (1회만)
+
+### 0-1. Unity Hub + Unity 6 설치
+
+이미 설치되어 있다면 → **Android 모듈만 확인**
 
 ```
-Unity Hub → Open → select the LED_VR root folder
+Unity Hub → Installs → 설치된 Unity 6.3 LTS 옆 톱니바퀴(⚙)
+  → Add Modules
+  → ☑ Android Build Support
+  → ☑ Android SDK & NDK Tools
+  → ☑ OpenJDK
+  → Install
 ```
 
-Unity will import packages from `Packages/manifest.json`.
+> Android 항목이 이미 체크되어 있으면 STEP 1로 건너뛰기
 
-## 2. Install Required Packages (verify)
+### 0-2. Quest 2 개발자 모드 켜기
 
-Window → Package Manager — confirm these are installed:
+```
+1. 스마트폰에 "Meta Quest" 앱 설치 → 로그인
+2. Quest 2와 블루투스 페어링
+3. 메뉴 → 디바이스 → 개발자 모드(Developer Mode) → ON
+4. Quest 2 재부팅
+```
 
-- **XR Plugin Management** 4.4+
-- **OpenXR Plugin** 1.9+
-- **XR Interaction Toolkit** 2.5+  *(import Starter Assets sample)*
-- **Input System** 1.7+
-- **TextMeshPro** 3.0+  *(import TMP Essentials when prompted)*
+> "개발자 모드"가 안 보이면 https://developer.oculus.com 에서 "조직 생성" 먼저
 
-## 3. XR / OpenXR Settings
+### 0-3. ADB 드라이버 (Windows만)
 
-### 3-a. Enable XR
+```
+"Oculus ADB Drivers" 검색 → 다운로드 → 압축 풀기
+→ android_winusb.inf 우클릭 → 설치
+```
 
-Edit → Project Settings → **XR Plug-in Management**
+macOS / Linux는 필요 없음.
 
-| Tab | Setting |
-|---|---|
-| **Android** | ☑ OpenXR |
-| **PC** (optional) | ☑ OpenXR |
+---
 
-### 3-b. OpenXR Features
+## STEP 1. 프로젝트 만들기
 
-Under XR Plug-in Management → OpenXR:
+### 방법 A: 지금 열려있는 프로젝트에 스크립트만 복사 (가장 간단)
 
-| Setting | Value |
-|---|---|
-| Interaction Profile | **Oculus Touch Controller Profile** |
-| Render Mode | Multi-pass *(or Single-pass Instanced)* |
-| Depth Submission Mode | None |
-| Features ☑ | Meta Quest Support |
+이미 "My project" (URP Empty)가 열려있다면:
 
-### 3-c. Android Player Settings
+```
+1. GitHub에서 코드 다운로드:
+   - https://github.com/holica49/LED_VR 접속
+   - 초록색 "Code" 버튼 → "Download ZIP"
+   - 압축 풀기
 
-Edit → Project Settings → **Player → Android tab**:
+2. 압축 푼 폴더에서 아래 파일들 복사:
+   LED_VR/Assets/Scripts/ 폴더 통째로
+   → My project/Assets/ 안에 붙여넣기
 
-| Setting | Value |
-|---|---|
-| Company Name | (anything) |
-| Product Name | LED_VR_Demo |
-| Minimum API Level | **Android 10.0 (API 29)** |
-| Target API Level | **Automatic (highest)** or 32 |
-| Scripting Backend | **IL2CPP** |
-| Target Architectures | **ARM64** only |
-| Install Location | Automatic |
-| Graphics APIs | **Vulkan** (remove OpenGL ES if present) |
-| Color Space | **Linear** |
+3. Unity로 돌아오면 자동으로 스크립트를 인식함
+```
 
-### 3-d. Quality Settings (recommended)
+최종 경로 확인:
+```
+My project/
+  Assets/
+    Scripts/
+      ScreenConfig.cs
+      ScreenController.cs
+      UIController.cs
+      SceneBootstrap.cs
+```
 
-Edit → Project Settings → Quality:
+### 방법 B: 새 프로젝트로 시작
 
-- Use **Medium** or **Low** preset for Android
-- Anti-Aliasing: 4x MSAA (or 2x for performance)
-- VSync Count: Don't Sync (XR handles vsync)
+```
+Unity Hub → New Project
+  → 템플릿: "Universal 3D" (URP)
+  → 프로젝트 이름: LED_VR_Demo
+  → Create
+```
 
-## 4. Scene Setup
+위와 같이 Scripts 폴더 복사.
 
-### Option A — Automatic (SceneBootstrap)
+---
 
-1. Create a new scene (File → New Scene → Basic)
-2. Delete default Main Camera and Directional Light
-3. Create empty GameObject → name it `Bootstrap`
-4. Attach `SceneBootstrap.cs`
-5. Press Play — scene auto-builds
+## STEP 2. 필수 패키지 설치
 
-### Option B — Manual
+### 2-1. 패키지 매니저 열기
 
-Follow `Docs/SCENE_HIERARCHY.md` to build the hierarchy by hand.
+```
+Window → Package Manager
+```
 
-### For Quest 2 Build (both options)
+### 2-2. XR 패키지 설치
 
-1. Delete the auto-created camera rig
-2. Add **XR Origin (XR Rig)** prefab from
-   `Packages/XR Interaction Toolkit/Runtime/Prefabs/XR Origin (XR Rig).prefab`
-3. Add **XR Interaction Manager** if not present
-4. Add **Event System** with **XR UI Input Module**
-5. On the XR Origin's **Left/Right Controller**: add
-   **XR Ray Interactor** + **XR Interactor Line Visual** for UI pointing
-6. Assign the XR Origin transform to `ScreenController.xrOrigin` in Inspector
-7. On `UICanvas`: set Canvas → **Event Camera** to the XR Origin's Main Camera
-8. Add a **Tracked Device Graphic Raycaster** component to the Canvas
-   (replace the default `GraphicRaycaster`)
+왼쪽 상단 드롭다운을 **"Packages: Unity Registry"** 로 변경 후 검색:
 
-## 5. Build APK
+| 순서 | 검색어 | 패키지명 | 버튼 |
+|---|---|---|---|
+| 1 | `XR Plugin` | **XR Plugin Management** | Install |
+| 2 | `OpenXR` | **OpenXR Plugin** | Install |
+| 3 | `Meta` | **Unity OpenXR: Meta** | Install |
+| 4 | `XR Interaction` | **XR Interaction Toolkit** | Install |
 
-1. File → Build Settings
-2. Switch Platform → **Android**
-3. Add the scene to Scenes In Build
-4. Texture Compression: **ASTC** (Quest default)
-5. Click **Build** → save as `LED_VR_Demo.apk`
+> 설치 순서대로 하면 의존성이 자동 해결됨
+> "Input System" 백엔드 변경 팝업 뜨면 → **"Yes"** 클릭 (Unity 재시작됨)
 
-## 6. Install on Quest 2 (Sideload)
+### 2-3. XR Interaction Toolkit 샘플 import
 
-### Via adb
+```
+Package Manager → XR Interaction Toolkit 선택
+  → 오른쪽 "Samples" 탭
+  → "Starter Assets" → Import
+```
+
+### 2-4. TextMeshPro 리소스 import
+
+Unity 6에서는 TMP가 내장되어 있지만 폰트 리소스는 별도 import 필요:
+
+```
+Window → TextMeshPro → Import TMP Essential Resources
+→ 팝업에서 Import 클릭
+```
+
+> 메뉴가 안 보이면: 상단에 Edit → Project Settings 검색 후 TextMeshPro 확인
+
+---
+
+## STEP 3. Android + Quest 2 설정
+
+### 3-1. Android 플랫폼 전환
+
+```
+File → Build Profiles    (단축키: Ctrl+Shift+B)
+  → 왼쪽 하단 "Add Build Profile" → "Android" 선택
+  → "Switch Platform" 클릭
+  → 1~2분 대기 (에셋 재변환)
+```
+
+### 3-2. XR 활성화
+
+```
+Edit → Project Settings → XR Plug-in Management
+  → Android 탭 (로봇 아이콘 🤖)
+  → ☑ OpenXR 체크
+```
+
+### 3-3. OpenXR에서 Quest 활성화
+
+```
+왼쪽 메뉴에서 XR Plug-in Management → OpenXR 클릭
+
+  Enabled Interaction Profiles:
+    → "+" 버튼 → "Meta Quest Touch Pro Controller Profile" 추가
+    (또는 "Oculus Touch Controller Profile")
+
+  OpenXR Feature Groups:
+    → ☑ "Meta Quest" 체크 (이것이 핵심!)
+```
+
+> 노란 경고(⚠) 뜨면 → **"Fix All"** 클릭
+
+### 3-4. Player Settings (Android)
+
+```
+Edit → Project Settings → Player → Android 탭
+
+Other Settings:
+  Color Space               → Linear
+  Auto Graphics API         → 체크 해제
+  Graphics APIs             → Vulkan만 남기기 (OpenGL ES 있으면 "-" 로 제거)
+  Minimum API Level         → Android 10.0 (API 29)
+  Scripting Backend         → IL2CPP
+  Target Architectures      → ☑ ARM64 만 체크
+```
+
+---
+
+## STEP 4. 씬 만들기
+
+### 4-1. 새 씬 생성
+
+```
+File → New Scene → Basic (Built-in) → Create
+```
+
+### 4-2. 기본 오브젝트 정리
+
+Hierarchy에서 삭제:
+```
+- Main Camera (삭제)
+- Directional Light (삭제해도 됨, SceneBootstrap이 만들어줌)
+```
+
+### 4-3. SceneBootstrap 추가
+
+```
+1. Hierarchy 우클릭 → Create Empty
+2. 이름을 "Bootstrap"으로 변경
+3. Inspector에서 Add Component → "SceneBootstrap" 검색 → 추가
+```
+
+### 4-4. XR Origin 추가 (Quest 컨트롤러로 UI 조작하려면 필수)
+
+```
+1. Hierarchy 우클릭 → XR → XR Origin (XR Rig)
+2. Hierarchy 우클릭 → XR → Interaction Manager (없으면 추가)
+3. Hierarchy에 EventSystem 확인 → 없으면:
+   우클릭 → UI → Event System
+```
+
+### 4-5. 씬 저장
+
+```
+File → Save As → Assets/Scenes/LEDScreenDemo.unity
+```
+
+### 4-6. PC에서 테스트
+
+```
+▶ Play 버튼 클릭
+→ 어두운 바닥 + 파란 LED 박스 + 왼쪽에 UI 패널이 보이면 성공!
+```
+
+---
+
+## STEP 5. Quest 2 빌드
+
+### 5-1. Quest 2를 USB-C로 PC에 연결
+
+```
+1. USB-C 케이블로 연결
+2. Quest 2 쓰면 "USB 디버깅 허용?" 팝업 → 허용
+3. PC 터미널(cmd/PowerShell)에서 확인:
+   adb devices
+   → 숫자가 보이면 연결 성공
+```
+
+### 5-2. 빌드
+
+```
+File → Build Profiles    (Ctrl+Shift+B)
+  → 현재 Android 프로필 선택
+  → "Add Open Scenes" → LEDScreenDemo 추가
+  → Texture Compression: ASTC
+  → "Build" 클릭
+  → 저장 위치/이름 지정 (예: LED_VR_Demo.apk)
+  → 첫 빌드 5~15분 대기
+```
+
+### 5-3. Quest 2에 설치
 
 ```bash
-# Connect Quest 2 via USB-C, allow USB debugging on headset
-adb devices                          # verify device shows up
-adb install LED_VR_Demo.apk         # first install
-adb install -r LED_VR_Demo.apk      # update existing
+adb install LED_VR_Demo.apk
 ```
 
-### Via SideQuest
+### 5-4. 실행
 
-1. Open SideQuest desktop app
-2. Connect Quest 2
-3. Drag-and-drop the `.apk` file into SideQuest
+```
+Quest 2 헤드셋에서:
+  앱 라이브러리 → 오른쪽 상단 필터 → "알 수 없는 소스"
+  → "LED_VR_Demo" 실행!
+```
 
-### Launch on Quest 2
+---
 
-- App Library → filter "Unknown Sources"
-- Find **LED_VR_Demo** → Launch
+## 문제 해결
 
-## 7. Troubleshooting
-
-| Problem | Fix |
+| 증상 | 해결 |
 |---|---|
-| Black screen on Quest | Verify OpenXR + Meta Quest Support feature enabled |
-| UI not responding to controller | Add XR Ray Interactor to controllers; use Tracked Device Graphic Raycaster on Canvas |
-| App crashes on start | Check `adb logcat -s Unity` for errors; likely missing TMP resources |
-| Low FPS | Reduce quality preset; ensure ARM64 + IL2CPP; use Vulkan |
-| Input fields not editable | Ensure XR UI Input Module is on EventSystem; use physical keyboard overlay or pre-fill defaults |
+| Package Manager에 Android 없음 | Unity Hub → Installs → Add Modules → Android Build Support |
+| OpenXR 설정에 Meta Quest 없음 | "Unity OpenXR: Meta" 패키지가 설치 안 됨 → STEP 2-2 |
+| Play 누르면 핑크색 오브젝트 | URP Shader 문제 → Edit → Rendering → Render Pipeline 확인 |
+| TMP 글자가 안 보임 | Window → TextMeshPro → Import TMP Essential Resources |
+| Quest에서 검은 화면 | OpenXR + Meta Quest Feature 체크 확인 → STEP 3-3 |
+| 컨트롤러로 UI 못 누름 | XR Origin의 컨트롤러에 XR Ray Interactor 확인 |
+| adb devices 비어있음 | 개발자 모드 ON 확인, USB 케이블 교체 시도 |
+| 빌드 에러 | Scripting Backend = IL2CPP, ARM64 확인 → STEP 3-4 |
